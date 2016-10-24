@@ -32,6 +32,7 @@ interface EntityStore<T : Any, out R> : Queryable<T>, AutoCloseable {
     fun <K : Any, E : T> insert(entities: Iterable<E>, keyClass: KClass<K>): R
     infix fun <E : T> update(entity: E): R
     infix fun <E : T> update(entities: Iterable<E>): R
+    fun <E : T> update(entity: E, vararg attributes: Attribute<*, *>): R
     infix fun <E : T> upsert(entity: E): R
     infix fun <E : T> upsert(entities: Iterable<E>): R
     infix fun <E : T> refresh(entity: E): R
@@ -52,6 +53,7 @@ interface BlockingEntityStore<T : Any> : EntityStore<T, Any> {
     override fun <K : Any, E : T> insert(entities: Iterable<E>, keyClass: KClass<K>): Iterable<K>
     override fun <E : T> update(entity: E): E
     override fun <E : T> update(entities: Iterable<E>): Iterable<E>
+    override fun <E : T> update(entity: E, vararg attributes: Attribute<*, *>): E
     override fun <E : T> upsert(entity: E): E
     override fun <E : T> upsert(entities: Iterable<E>): Iterable<E>
     override fun <E : T> refresh(entity: E): E

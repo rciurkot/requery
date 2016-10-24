@@ -119,9 +119,11 @@ class KotlinEntityDataStore<T : Persistable>(configuration: Configuration) : Blo
 
     override fun <E : T> update(entity: E): E = data.update(entity)
     override fun <E : T> update(entities: Iterable<E>): Iterable<E> = data.update(entities)
+    override fun <E : T> update(entity: E, vararg attributes: Attribute<*,*>): E = data.update(entity, *attributes)
 
     override fun <E : T> upsert(entity: E): E = data.upsert(entity)
     override fun <E : T> upsert(entities: Iterable<E>): Iterable<E> = data.upsert(entities)
+    fun <E : T> upsert(entity: E, vararg attributes: Attribute<*,*>): E = data.upsert(entity, *attributes)
 
     override fun <E : T> refresh(entity: E): E = data.refresh(entity)
     override fun <E : T> refresh(entity: E, vararg attributes: Attribute<*, *>): E =

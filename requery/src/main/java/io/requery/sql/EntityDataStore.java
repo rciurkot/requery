@@ -286,6 +286,18 @@ public class EntityDataStore<T> implements BlockingEntityStore<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public <E extends T> E upsert(E entity, Attribute<?, ?>... attributes) {
+        try (TransactionScope transaction = new TransactionScope(transactionProvider)) {
+            EntityProxy<E> proxy = context.proxyOf(entity, true);
+            synchronized (proxy.syncObject()) {
+                context.write(proxy.type().getClassType()).upsert(entity, proxy, (Attribute<E, ?>[]) attributes);
+                transaction.commit();
+                return entity;
+            }
+        }
+    }
+
     @Override
     public <E extends T> Iterable<E> upsert(Iterable<E> entities) {
         try (TransactionScope transaction = new TransactionScope(transactionProvider)) {

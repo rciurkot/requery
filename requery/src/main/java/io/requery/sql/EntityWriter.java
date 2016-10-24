@@ -449,6 +449,10 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
     }
 
     public void upsert(E entity, final EntityProxy<E> proxy) {
+        upsert(entity, proxy, null);
+    }
+
+    public void upsert(E entity, final EntityProxy<E> proxy, final Attribute<E, ?>[] attributes) {
         if (hasGeneratedKey) {
             if (hasKey(proxy)) {
                 update(entity, proxy, Cascade.UPSERT, null, null);
@@ -461,11 +465,10 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
                     cascadeKeyReference(Cascade.UPSERT, proxy, attribute);
                 }
                 incrementVersion(proxy);
-                List<Attribute<E, ?>> attributes = Arrays.asList(bindableAttributes);
                 UpdateOperation upsert = new UpdateOperation(context);
                 QueryElement<Scalar<Integer>> element =
                         new QueryElement<>(QueryType.UPSERT, model, upsert);
-                for (Attribute<E, ?> attribute : attributes) {
+                for (Attribute<E, ?> attribute : Arrays.asList(bindableAttributes)) {
                     element.value((Expression) attribute, proxy.get(attribute, false));
                 }
                 int rows = upsert.evaluate(element).value();
@@ -479,7 +482,12 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
                 }
             } else {
                 // not a real upsert, but can be ok for embedded databases
-                int updateResult = update(entity, proxy, Cascade.UPSERT, null, null);
+                int updateResult;
+                if (attributes == null) {
+                    updateResult = update(entity, proxy, Cascade.UPSERT, null, null);
+                } else {
+                    updateResult = update(entity, proxy, attributes);
+                }
                 if (updateResult == -1 || updateResult == 0) {
                     insert(entity, proxy, Cascade.UPSERT, null);
                 }
@@ -487,9 +495,9 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
         }
     }
 
-    public void update(E entity, EntityProxy<E> proxy, final Attribute<E, ?>[] attributes) {
+    public int update(E entity, EntityProxy<E> proxy, final Attribute<E, ?>[] attributes) {
         final List<Attribute<E, ?>> list = Arrays.asList(attributes);
-        update(entity, proxy, Cascade.AUTO,
+        return update(entity, proxy, Cascade.AUTO,
             new Predicate<Attribute<E, ?>>() {
                 @Override
                 public boolean test(Attribute<E, ?> value) {

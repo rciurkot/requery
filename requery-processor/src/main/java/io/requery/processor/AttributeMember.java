@@ -543,13 +543,15 @@ class AttributeMember extends BaseProcessableElement<Element> implements Attribu
             return element().getSimpleName().toString();
         } else if (element().getKind() == ElementKind.METHOD) {
             ExecutableElement methodElement = (ExecutableElement) element();
-            String name = methodElement.getSimpleName().toString();
+            String originalName = methodElement.getSimpleName().toString();
+            String name = originalName;
             name = Names.removeMethodPrefixes(name);
             if (Names.isAllUpper(name)) {
-                return name.toLowerCase(Locale.ROOT);
+                name = name.toLowerCase(Locale.ROOT);
             } else {
-                return Names.lowerCaseFirst(name);
+                name = Names.lowerCaseFirst(name);
             }
+            return Names.checkIfAttributeNameNotForbidden(name, originalName);
         } else {
             throw new IllegalStateException();
         }

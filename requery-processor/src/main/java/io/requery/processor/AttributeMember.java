@@ -619,6 +619,7 @@ class AttributeMember extends BaseProcessableElement<Element> implements Attribu
         // for a method strip any accessor prefix such as get/is
         if (element().getKind() == ElementKind.METHOD) {
             ExecutableElement executableElement = (ExecutableElement) element();
+            String originalName = elementName;
             AccessorNamePrefix prefix = AccessorNamePrefix.fromElement(executableElement);
             switch (prefix) {
                 case GET:
@@ -628,7 +629,8 @@ class AttributeMember extends BaseProcessableElement<Element> implements Attribu
                     elementName = elementName.replaceFirst("is", "");
                     break;
             }
-            return Names.isAllUpper(elementName) ? elementName : Names.lowerCaseFirst(elementName);
+            elementName = Names.isAllUpper(elementName) ? elementName : Names.lowerCaseFirst(elementName);
+            return Names.checkIfAttributeNameNotForbidden(elementName, originalName);
         }
         return elementName;
     }

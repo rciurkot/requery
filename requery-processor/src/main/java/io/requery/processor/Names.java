@@ -105,7 +105,7 @@ final class Names {
         return typeName;
     }
 
-    public static String checkIfAttributeNameNotForbidden(CharSequence newName, CharSequence fallback) {
-        return SourceVersion.isName(newName) ? newName.toString() : fallback.toString();
+    public static String checkReservedName(CharSequence name, CharSequence fallback) {
+        return SourceVersion.isName(name) ? name.toString() : fallback.toString();
     }
 }

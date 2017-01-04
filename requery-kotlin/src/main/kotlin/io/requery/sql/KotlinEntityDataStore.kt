@@ -16,7 +16,7 @@
 
 package io.requery.sql
 
-import io.requery.Persistable
+import io.requery.RollbackException
 import io.requery.TransactionIsolation
 import io.requery.kotlin.*
 import io.requery.meta.Attribute
@@ -36,7 +36,7 @@ import kotlin.reflect.KClass
  *
  * @author Nikhil Purushe
  */
-class KotlinEntityDataStore<T : Persistable>(configuration: Configuration) : BlockingEntityStore<T> {
+class KotlinEntityDataStore<T : Any>(configuration: Configuration) : BlockingEntityStore<T> {
 
     private var data: EntityDataStore<T> = EntityDataStore(configuration)
     private var context : EntityContext<T> = data.context()
@@ -138,20 +138,24 @@ class KotlinEntityDataStore<T : Persistable>(configuration: Configuration) : Blo
 
     override fun <V> withTransaction(body: BlockingEntityStore<T>.() -> V): V {
         try {
-            data.transaction().begin()
-            return body()
-        } finally {
-            data.transaction().close()
+            val transaction = data.transaction().begin()
+            val result = body()
+            transaction.commit()
+            return result
+        } catch (e : Exception) {
+            throw RollbackException(e)
         }
     }
 
     override fun <V> withTransaction(isolation: TransactionIsolation,
                                      body: BlockingEntityStore<T>.() -> V): V {
         try {
-            data.transaction().begin(isolation)
-            return body()
-        } finally {
-            data.transaction().close()
+            val transaction = data.transaction().begin(isolation)
+            val result = body()
+            transaction.commit()
+            return result
+        } catch (e : Exception) {
+            throw RollbackException(e)
         }
     }
 

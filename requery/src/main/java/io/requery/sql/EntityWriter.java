@@ -524,12 +524,18 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
         // updates the entity using a query (not the query values are not specified but instead
         // mapped directly to avoid boxing)
         if (filterBindable == null) {
+            final List<Attribute<E, ?>> list = new ArrayList<>();
+            for (Attribute<E, ?> value : bindableAttributes) {
+                if (stateless ||
+                    ((proxy.getState(value) == PropertyState.MODIFIED) &&
+                    (!value.isAssociation() || value.isForeignKey() || value.isKey()))) {
+                    list.add(value);
+                }
+            }
             filterBindable = new Predicate<Attribute<E, ?>>() {
                 @Override
                 public boolean test(Attribute<E, ?> value) {
-                    return stateless ||
-                            ((proxy.getState(value) == PropertyState.MODIFIED) &&
-                            (!value.isAssociation() || value.isForeignKey() || value.isKey()));
+                    return list.contains(value);
                 }
             };
         }
@@ -720,7 +726,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
                         Class<? extends S> removeType = (Class<? extends S>)
                                 referencedType.getClassType();
 
-                        Supplier<Scalar<Integer>> query = queryable.delete(removeType)
+                        Supplier<? extends Scalar<Integer>> query = queryable.delete(removeType)
                                 .where(tKey.equal(keyValue))
                                 .and(uKey.equal(otherValue));
                         int count = query.get().value();
@@ -806,7 +812,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
             }
         }
 
-        Deletion<Scalar<Integer>> deletion = queryable.delete(entityClass);
+        Deletion<? extends Scalar<Integer>> deletion = queryable.delete(entityClass);
 
         for (Attribute<E, ?> attribute : whereAttributes) {
             if (attribute == versionAttribute) {
@@ -889,7 +895,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
             }
             EntityWriter<U, S> writer = context.write(proxy.type().getClassType());
             if (mode == Cascade.AUTO) {
-                mode = proxy.isLinked() || hasKey(proxy)? Cascade.UPDATE : Cascade.INSERT;
+                mode = proxy.isLinked()? Cascade.UPDATE : Cascade.UPSERT;
             }
             switch (mode) {
                 case INSERT:
@@ -936,7 +942,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
             while (iterator.hasNext() && ids.size() < batchSize) {
                 E entity = iterator.next();
                 EntityProxy<E> proxy = proxyProvider.apply(entity);
-                if (versionAttribute != null || type.getKeyAttributes().size() > 1) {
+                if (versionAttribute != null || keyCount > 1) {
                     // not optimized if version column has to be checked, or multiple primary keys
                     // TODO could use JDBC batching
                     delete(entity, proxy);
@@ -957,7 +963,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
             }
             // optimized case: delete from T where key in (keys...)
             if (ids.size() > 0) {
-                Deletion<Scalar<Integer>> deletion = queryable.delete(entityClass);
+                Deletion<? extends Scalar<Integer>> deletion = queryable.delete(entityClass);
                 for (Attribute<E, ?> attribute : type.getKeyAttributes()) {
                     QueryAttribute<E, Object> id = Attributes.query(attribute);
                     deletion.where(id.in(ids));
@@ -972,7 +978,7 @@ class EntityWriter<E extends S, S> implements ParameterBinder<E> {
 
     private <U extends S> boolean hasKey(EntityProxy<U> proxy) {
         Type<U> type = proxy.type();
-        if (type.getKeyAttributes().size() > 0) {
+        if (keyCount > 0) {
             for (Attribute<U, ?> attribute : type.getKeyAttributes()) {
                 PropertyState state = proxy.getState(attribute);
                 if (!(state == PropertyState.MODIFIED || state == PropertyState.LOADED)) {

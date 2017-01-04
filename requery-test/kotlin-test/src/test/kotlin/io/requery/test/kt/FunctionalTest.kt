@@ -16,7 +16,6 @@
 
 package io.requery.test.kt
 
-import io.requery.Persistable
 import io.requery.kotlin.*
 import io.requery.sql.*
 import org.h2.jdbcx.JdbcDataSource
@@ -31,23 +30,25 @@ import java.util.UUID
 
 class FunctionalTest {
 
-    var instance : KotlinEntityDataStore<Persistable>? = null
-    val data : KotlinEntityDataStore<Persistable> get() = instance!!
+    var instance : KotlinEntityDataStore<Any>? = null
+    val data : KotlinEntityDataStore<Any> get() = instance!!
 
-    fun randomPerson(): Person {
-        val random = Random()
-        val person = PersonEntity()
-        val firstNames = arrayOf("Alice", "Bob", "Carol")
-        val lastNames = arrayOf("Smith", "Lee", "Jones")
-        person.name = (firstNames[random.nextInt(firstNames.size)] + " " +
-                lastNames[random.nextInt(lastNames.size)])
-        person.email = (person.name.replace(" ".toRegex(), "").toLowerCase() + "@example.com")
-        person.uuid = (UUID.randomUUID())
-        person.homepage = (URL("http://www.requery.io"))
-        val calendar = Calendar.getInstance()
-        calendar.set(1900 + random.nextInt(90), random.nextInt(12), random.nextInt(30))
-        person.birthday = calendar.time
-        return person
+    companion object {
+        fun randomPerson(): Person {
+            val random = Random()
+            val person = PersonEntity()
+            val firstNames = arrayOf("Alice", "Bob", "Carol")
+            val lastNames = arrayOf("Smith", "Lee", "Jones")
+            person.name = (firstNames[random.nextInt(firstNames.size)] + " " +
+                    lastNames[random.nextInt(lastNames.size)])
+            person.email = (person.name.replace(" ".toRegex(), "").toLowerCase() + "@example.com")
+            person.uuid = (UUID.randomUUID())
+            person.homepage = (URL("http://www.requery.io"))
+            val calendar = Calendar.getInstance()
+            calendar.set(1900 + random.nextInt(90), random.nextInt(12), random.nextInt(30))
+            person.birthday = calendar.time
+            return person
+        }
     }
 
     @Before

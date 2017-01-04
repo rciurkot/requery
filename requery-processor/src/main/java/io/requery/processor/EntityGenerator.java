@@ -116,6 +116,9 @@ class EntityGenerator extends EntityPartGenerator implements SourceGenerator {
                 generateHashCode(builder);
                 generateToString(builder);
             }
+            if (entity.isCopyable()) {
+                generateCopy(builder);
+            }
         } else {
             // private constructor
             builder.addMethod(MethodSpec.constructorBuilder()
@@ -310,9 +313,7 @@ class EntityGenerator extends EntityPartGenerator implements SourceGenerator {
                 boolean castType = false;
 
                 // use wildcard generic collection type if necessary
-                if (SourceLanguage.of(entity.element()) == SourceLanguage.KOTLIN &&
-                    setTypeName instanceof ParameterizedTypeName) {
-
+                if (setTypeName instanceof ParameterizedTypeName) {
                     ParameterizedTypeName parameterizedName = (ParameterizedTypeName) setTypeName;
                     List<TypeName> arguments = parameterizedName.typeArguments;
                     List<TypeName> wildcards = new ArrayList<>();
@@ -388,8 +389,7 @@ class EntityGenerator extends EntityPartGenerator implements SourceGenerator {
                 String format = embedded.attributes().values().stream().map(attr ->
                         Names.upperCaseUnderscore(embeddedAttributeName(attribute, attr)))
                         .collect(Collectors.joining(", ", "$L = new $T($L, ", ")"));
-                constructor.addStatement(format.toString(),
-                    attribute.fieldName(), embeddedName, PROXY_NAME);
+                constructor.addStatement(format, attribute.fieldName(), embeddedName, PROXY_NAME);
             }));
         builder.addMethod(constructor.build());
     }
@@ -421,6 +421,16 @@ class EntityGenerator extends EntityPartGenerator implements SourceGenerator {
                     .returns(String.class)
                     .addStatement("return $L.toString()", PROXY_NAME);
             builder.addMethod(equals.build());
+        }
+    }
+
+    private void generateCopy(TypeSpec.Builder builder) {
+        if (!Mirrors.overridesMethod(types, typeElement, "copy")) {
+            MethodSpec.Builder copy = MethodSpec.methodBuilder("copy")
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(typeName)
+                    .addStatement("return $L.copy()", PROXY_NAME);
+            builder.addMethod(copy.build());
         }
     }
 
